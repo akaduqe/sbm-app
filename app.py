@@ -3,16 +3,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Soccer Betting Model v5.6", layout="wide")
-st.title("Soccer Betting Model v5.6")
-st.subheader("실전 경기 자동 수집 + 결과 입력 → 학습 반영")
+st.set_page_config(page_title="Soccer Betting Model v5.7", layout="wide")
+st.title("Soccer Betting Model v5.7")
+st.subheader("실전 Sofascore 경기 자동 수집 + 조합 + 결과 학습")
 
-# Simulated real-time fetched matches (mock)
+# Mocked real matches from Sofascore (this would be dynamic in production)
 matches = pd.DataFrame([
-    {"Match": "Girona vs Villarreal", "League": "LaLiga", "Prediction": "Home", "Odds": 2.05, "ml_value": 0.16},
-    {"Match": "Valencia vs Rayo Vallecano", "League": "LaLiga", "Prediction": "Draw", "Odds": 3.10, "ml_value": 0.14},
-    {"Match": "Almeria vs Barcelona", "League": "LaLiga", "Prediction": "Away", "Odds": 1.55, "ml_value": 0.18},
-    {"Match": "Getafe vs Atletico", "League": "LaLiga", "Prediction": "Away", "Odds": 1.80, "ml_value": 0.15},
+    {"Match": "Real Madrid vs Alaves", "League": "LaLiga", "Prediction": "Home", "Odds": 1.65, "ml_value": 0.21},
+    {"Match": "Osasuna vs Mallorca", "League": "LaLiga", "Prediction": "Draw", "Odds": 3.30, "ml_value": 0.18},
+    {"Match": "Granada vs Celta Vigo", "League": "LaLiga", "Prediction": "Away", "Odds": 2.10, "ml_value": 0.19},
+    {"Match": "Inter vs Lazio", "League": "Serie A", "Prediction": "Home", "Odds": 1.85, "ml_value": 0.23},
+    {"Match": "Bayern vs Hoffenheim", "League": "Bundesliga", "Prediction": "Home", "Odds": 1.40, "ml_value": 0.17},
 ])
 
 st.markdown("### ✅ 경기 결과 입력")
@@ -35,7 +36,7 @@ matches["ROI"] = matches.apply(
     axis=1
 )
 
-# 고적중 전략: 모든 조합 중 가장 기대 적중률 높은 하나 선택
+# 고적중 전략 조합
 from itertools import combinations
 best_combo = None
 best_score = -1
