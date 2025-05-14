@@ -3,7 +3,7 @@ import streamlit as st
 import datetime
 
 st.set_page_config(layout="wide")
-st.title("축구 베팅 모델 v7.0 - 드롭다운 리렌더링 완전 수정판")
+st.title("축구 베팅 모델 v7.0 - 리그 드롭다운 완전 반영 최종 안정판")
 
 league_teams = {
     "EPL": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
@@ -32,14 +32,13 @@ st.header("1. 경기 수동 등록")
 if "matches" not in st.session_state:
     st.session_state.matches = []
 
-# 리그 선택 & 강제 리렌더링
 if "selected_league" not in st.session_state:
     st.session_state.selected_league = "EPL"
 
 league = st.selectbox("리그 선택", list(league_teams.keys()), index=list(league_teams.keys()).index(st.session_state.selected_league))
 if league != st.session_state.selected_league:
     st.session_state.selected_league = league
-    st.experimental_rerun()
+    st.rerun()  # 최신 버전 함수로 수정됨
 
 with st.form("match_form"):
     home = st.selectbox("홈 팀", league_teams[league])
