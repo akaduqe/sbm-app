@@ -5,7 +5,6 @@ import datetime
 st.set_page_config(layout="wide")
 st.title("축구 베팅 모델 v7.0 - 실전 예측 (CSV 불필요)")
 
-# 리그 및 팀 정보
 league_teams = {
     "EPL": ["Arsenal", "Man City", "Liverpool", "Chelsea"],
     "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Valencia"],
@@ -14,7 +13,6 @@ league_teams = {
     "Ligue 1": ["PSG", "Marseille", "Lyon", "Monaco"]
 }
 
-# 경기 등록
 st.header("1. 경기 수동 등록")
 if "matches" not in st.session_state:
     st.session_state.matches = []
@@ -27,7 +25,7 @@ with st.form("match_form"):
         home = st.selectbox("홈 팀", league_teams[league])
     with col3:
         away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home])
-    date_input = st.date_input("경기 날짜", value=date.today())
+    date_input = st.date_input("경기 날짜", value=datetime.date.today())
     col4, col5 = st.columns(2)
     with col4:
         hour = st.selectbox("시", list(range(0, 24)))
@@ -43,7 +41,6 @@ with st.form("match_form"):
             "Away": away
         })
 
-# 예측 생성
 st.header("2. 예측 생성 및 조합 추천")
 if st.button("예측 생성"):
     for match in st.session_state.matches:
@@ -58,12 +55,10 @@ if st.button("예측 생성"):
             match["Prediction"] = "패"
             match["Value"] = -0.05
 
-# 예측 결과 출력
 if st.session_state.matches:
     st.subheader("전체 경기 및 예측 결과")
     st.dataframe(st.session_state.matches)
 
-# 조합 추천
 if st.button("조합 추천"):
     filtered = [m for m in st.session_state.matches if m.get("Value", -1) >= 0]
     st.markdown("### ✅ 4폴 조합 (수익 전략)")
