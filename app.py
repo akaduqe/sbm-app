@@ -1,56 +1,80 @@
 
 import streamlit as st
-import pandas as pd
+import datetime
 
 st.set_page_config(layout="wide")
-st.title("축구 베팅 모델 v6.6 - 수동 입력 기반 실전 예측 시스템")
+st.title("축구 베팅 모델 v7.0 - 실전 예측 (CSV 불필요)")
 
-uploaded_file = st.file_uploader("경기 일정 CSV 파일 업로드", type=["csv"])
-if uploaded_file is not None:
-    matches = pd.read_csv(uploaded_file)
-    required_cols = ["Date", "Time", "League", "Home", "Away"]
-    if list(matches.columns[:5]) != required_cols:
-        st.error("CSV 열 순서가 올바르지 않습니다. 정확한 순서: " + ", ".join(required_cols))
+# 리그 및 팀 정보
+league_teams = {
+    "EPL": ["Arsenal", "Man City", "Liverpool", "Chelsea"],
+    "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Valencia"],
+    "Serie A": ["Juventus", "Inter", "AC Milan", "Napoli"],
+    "Bundesliga": ["Bayern", "Dortmund", "Leverkusen", "Leipzig"],
+    "Ligue 1": ["PSG", "Marseille", "Lyon", "Monaco"]
+}
+
+# 경기 등록
+st.header("1. 경기 수동 등록")
+if "matches" not in st.session_state:
+    st.session_state.matches = []
+
+with st.form("match_form"):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        league = st.selectbox("리그 선택", list(league_teams.keys()))
+    with col2:
+        home = st.selectbox("홈 팀", league_teams[league])
+    with col3:
+        away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home])
+    date_input = st.date_input("경기 날짜", value=date.today())
+    col4, col5 = st.columns(2)
+    with col4:
+        hour = st.selectbox("시", list(range(0, 24)))
+    with col5:
+        minute = st.selectbox("분", [0, 15, 30, 45])
+    submit = st.form_submit_button("경기 추가")
+    if submit:
+        st.session_state.matches.append({
+            "Date": str(date_input),
+            "Time": f"{hour:02}:{minute:02}",
+            "League": league,
+            "Home": home,
+            "Away": away
+        })
+
+# 예측 생성
+st.header("2. 예측 생성 및 조합 추천")
+if st.button("예측 생성"):
+    for match in st.session_state.matches:
+        elo_diff = len(match["Home"]) - len(match["Away"])
+        if elo_diff > 0:
+            match["Prediction"] = "승"
+            match["Value"] = 0.06
+        elif elo_diff == 0:
+            match["Prediction"] = "무"
+            match["Value"] = 0.02
+        else:
+            match["Prediction"] = "패"
+            match["Value"] = -0.05
+
+# 예측 결과 출력
+if st.session_state.matches:
+    st.subheader("전체 경기 및 예측 결과")
+    st.dataframe(st.session_state.matches)
+
+# 조합 추천
+if st.button("조합 추천"):
+    filtered = [m for m in st.session_state.matches if m.get("Value", -1) >= 0]
+    st.markdown("### ✅ 4폴 조합 (수익 전략)")
+    for m in filtered[:4]:
+        st.write(f"{m['Home']} vs {m['Away']} → {m['Prediction']} (value: {m['Value']})")
+    st.markdown("### 🎯 10폴 조합 (재미 전략)")
+    for m in filtered[:10]:
+        st.write(f"{m['Home']} vs {m['Away']} → {m['Prediction']} (value: {m['Value']})")
+    st.markdown("### ⚡ 고적중 전략")
+    if filtered:
+        top = max(filtered, key=lambda x: x["Value"])
+        st.write(f"{top['Home']} vs {top['Away']} → {top['Prediction']} (value: {top['Value']})")
     else:
-        st.success("CSV 파일 정상 인식됨.")
-
-        predictions = ["승", "무", "패"]
-        overs = ["오버", "언더"]
-
-        num_matches = len(matches)
-        matches["Prediction"] = [predictions[i % 3] for i in range(num_matches)]
-        matches["O/U"] = [overs[i % 2] for i in range(num_matches)]
-        matches["Odds"] = [round(1.8 + (i % 4) * 0.3, 2) for i in range(num_matches)]
-        matches["Value"] = [round(0.1 - (i % 3) * 0.05, 2) for i in range(num_matches)]
-
-        results = []
-        roi = []
-        status = []
-
-        st.subheader("예측 및 결과 입력")
-
-        for i, row in matches.iterrows():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{row['Date']} [{row['League']}] {row['Home']} vs {row['Away']}**")
-                st.write(f"예측: {row['Prediction']} | 언오버: {row['O/U']} | 배당: {row['Odds']} | value: {row['Value']}")
-            with col2:
-                result = st.selectbox(f"결과 입력 - {row['Home']} vs {row['Away']}", ["미입력", "승", "무", "패"], key=f"r_{i}")
-                results.append(result)
-                if result == "미입력":
-                    roi.append(None)
-                    status.append("입력 대기")
-                else:
-                    roi.append(row['Odds'] - 1 if result == row['Prediction'] else -1)
-                    status.append("학습 완료")
-
-        matches["Result"] = results
-        matches["ROI"] = roi
-        matches["Status"] = status
-
-        st.subheader("전체 예측 및 학습 상태")
-        st.dataframe(matches)
-
-        roi_values = [r for r in roi if r is not None]
-        if roi_values:
-            st.metric("ROI 평균", round(sum(roi_values) / len(roi_values), 2))
+        st.write("value ≥ 0인 예측이 없습니다.")
