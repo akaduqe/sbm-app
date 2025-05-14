@@ -2,8 +2,8 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="축구 베팅 모델 v7.0", layout="wide")
-st.title("⚽ 실전 예측 모델 v7.0")
+st.set_page_config(page_title="축구 베팅 모델 v7.1", layout="wide")
+st.title("⚽ 실전 예측 모델 v7.1")
 
 uploaded_file = st.file_uploader("📂 경기 일정 파일 업로드 (.csv)", type="csv")
 
@@ -12,59 +12,59 @@ if uploaded_file:
     st.subheader("📊 업로드된 경기")
     st.dataframe(df)
 
-    # 예측 로직: 간단한 value 계산 시뮬레이션
-    def calc_value(row):
-        home_prob = 0.4
-        draw_prob = 0.3
-        away_prob = 0.3
-        odds_home = 2.2
-        odds_draw = 3.1
-        odds_away = 3.0
+    # 예측 변수: recent_form_diff, elo_diff, player_rating, rotation_risk, motivation_factor, VAR_bias, market_sentiment
+    def simulate_probabilities(row):
+        base = 0.3
+        home_score = base + 0.1 * (row.get("recent_form_diff", 0)) + 0.05 * (row.get("elo_diff", 0)) + 0.02 * (row.get("player_rating", 0))
+        draw_score = base + 0.01 * (row.get("VAR_bias", 0)) - 0.01 * abs(row.get("elo_diff", 0))
+        away_score = base + 0.1 * (-row.get("recent_form_diff", 0)) + 0.05 * (-row.get("elo_diff", 0)) + 0.02 * (row.get("rotation_risk", 0))
+        total = home_score + draw_score + away_score
+        return home_score/total, draw_score/total, away_score/total
 
-        values = {
-            "Home": odds_home * home_prob - 1,
-            "Draw": odds_draw * draw_prob - 1,
-            "Away": odds_away * away_prob - 1,
-        }
-        best_pick = max(values, key=values.get)
-        return best_pick, values[best_pick]
+    # 배당 예시 (임시)
+    def simulate_odds(row):
+        return 2.1, 3.3, 3.4
 
-    df[["Prediction", "Value"]] = df.apply(lambda row: pd.Series(calc_value(row)), axis=1)
+    def calculate_value(prob, odd):
+        return odd * prob - 1
+
+    predictions = []
+    values = []
+
+    for _, row in df.iterrows():
+        home_prob, draw_prob, away_prob = simulate_probabilities(row)
+        odds_home, odds_draw, odds_away = simulate_odds(row)
+
+        value_home = calculate_value(home_prob, odds_home)
+        value_draw = calculate_value(draw_prob, odds_draw)
+        value_away = calculate_value(away_prob, odds_away)
+
+        best = max([(value_home, "Home"), (value_draw, "Draw"), (value_away, "Away")], key=lambda x: x[0])
+        predictions.append(best[1])
+        values.append(round(best[0], 3))
+
+    df["Prediction"] = predictions
+    df["Value"] = values
 
     st.subheader("🔮 예측 결과 (value 기반)")
     st.dataframe(df)
 
     # 조합 추천
-    st.subheader("💡 조합 추천 (4폴 / 10폴 / 고적중)")
-    value_filtered = df[df["Value"] > 0]
-    fourfold = value_filtered.head(4)
-    tenfold = value_filtered.head(10)
-    best_combo = value_filtered.sort_values(by="Value", ascending=False).head(5)
-
+    st.subheader("💡 조합 추천")
+    filtered = df[df["Value"] > 0]
     st.markdown("**✅ 4폴 추천:**")
-    st.dataframe(fourfold[["Home", "Away", "Prediction", "Value"]])
-
+    st.dataframe(filtered.head(4)[["Home", "Away", "Prediction", "Value"]])
     st.markdown("**✅ 10폴 추천:**")
-    st.dataframe(tenfold[["Home", "Away", "Prediction", "Value"]])
-
+    st.dataframe(filtered.head(10)[["Home", "Away", "Prediction", "Value"]])
     st.markdown("**🔥 고적중 전략 조합:**")
-    st.dataframe(best_combo[["Home", "Away", "Prediction", "Value"]])
+    st.dataframe(filtered.sort_values(by="Value", ascending=False).head(5)[["Home", "Away", "Prediction", "Value"]])
 
     # 결과 입력
     st.subheader("📝 결과 입력")
-    result_inputs = []
-    for i, row in df.iterrows():
-        result = st.selectbox(f"{row['Home']} vs {row['Away']}", ["미입력", "Home", "Draw", "Away"], key=f"result_{i}")
-        result_inputs.append(result)
-    df["Result"] = result_inputs
+    df["Result"] = [st.selectbox(f"{row['Home']} vs {row['Away']}", ["미입력", "Home", "Draw", "Away"], key=i) for i, row in df.iterrows()]
+    df["ROI"] = df.apply(lambda x: 1 if x["Prediction"] == x["Result"] else -1 if x["Result"] != "미입력" else 0, axis=1)
 
-    # ROI 계산
-    def calc_roi(pred, actual):
-        return 1 if pred == actual else -1
-
-    df["ROI"] = df.apply(lambda x: calc_roi(x["Prediction"], x["Result"]) if x["Result"] != "미입력" else 0, axis=1)
+    st.subheader("💰 ROI 계산 결과")
     total_roi = df[df["Result"] != "미입력"]["ROI"].sum()
-    st.markdown(f"**💰 총 ROI: {total_roi}**")
-
-    st.subheader("📈 최종 결과")
+    st.write(f"**총 ROI:** {total_roi}")
     st.dataframe(df[["Home", "Away", "Prediction", "Value", "Result", "ROI"]])
