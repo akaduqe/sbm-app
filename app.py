@@ -3,7 +3,7 @@ import streamlit as st
 import datetime
 
 st.set_page_config(layout="wide")
-st.title("축구 베팅 모델 v7.0 - 리그 변경 시 드롭다운 반영 완전 수정판")
+st.title("축구 베팅 모델 v7.0 - 드롭다운 리렌더링 완전 수정판")
 
 league_teams = {
     "EPL": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
@@ -32,16 +32,24 @@ st.header("1. 경기 수동 등록")
 if "matches" not in st.session_state:
     st.session_state.matches = []
 
+# 리그 선택 & 강제 리렌더링
+if "selected_league" not in st.session_state:
+    st.session_state.selected_league = "EPL"
+
+league = st.selectbox("리그 선택", list(league_teams.keys()), index=list(league_teams.keys()).index(st.session_state.selected_league))
+if league != st.session_state.selected_league:
+    st.session_state.selected_league = league
+    st.experimental_rerun()
+
 with st.form("match_form"):
-    league = st.selectbox("리그 선택", list(league_teams.keys()), key="league_select")
-    home = st.selectbox("홈 팀", league_teams[league], key=f"home_{league}")
-    away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home], key=f"away_{league}")
-    date_input = st.date_input("경기 날짜", value=datetime.date.today(), key="date_select")
+    home = st.selectbox("홈 팀", league_teams[league])
+    away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home])
+    date_input = st.date_input("경기 날짜", value=datetime.date.today())
     col1, col2 = st.columns(2)
     with col1:
-        hour = st.selectbox("시", list(range(0, 24)), key="hour_select")
+        hour = st.selectbox("시", list(range(0, 24)))
     with col2:
-        minute = st.selectbox("분", [0, 15, 30, 45], key="minute_select")
+        minute = st.selectbox("분", [0, 15, 30, 45])
     submit = st.form_submit_button("경기 추가")
     if submit:
         st.session_state.matches.append({
