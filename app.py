@@ -19,11 +19,11 @@ if uploaded_file is not None:
         col1, col2 = st.columns([3, 1])
         with col1:
             st.markdown(f"**{row['Date']} [{row['League']}] {row['Home']} vs {row['Away']}**")
-            st.write(f"예측: {row['Prediction']} | 언오버: {row['O/U']} | 배당: {row['Odds']} | value: {row['Value']}")
+            st.write(f"예측: {row.get('Prediction', '-')} | 언오버: {row['O/U']} | 배당: {row['Odds']} | value: {row['Value']}")
         with col2:
             result = st.selectbox(f"결과 입력 - {row['Home']} vs {row['Away']}", ["미입력", "승", "무", "패"], key=f"r_{i}")
             results.append(result)
-            roi.append(row['Odds'] - 1 if result == row['Prediction'] else -1)
+            roi.append(row['Odds'] - 1 if result == row.get('Prediction', '-') else -1)
 
     matches["Result"] = results
     matches["ROI"] = roi
