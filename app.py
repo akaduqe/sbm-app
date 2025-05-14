@@ -3,7 +3,7 @@ import streamlit as st
 import datetime
 
 st.set_page_config(layout="wide")
-st.title("축구 베팅 모델 v7.0 - 전체 리그 팀 반영 버전 (버그 수정 완료)")
+st.title("축구 베팅 모델 v7.0 - 리그 변경 시 드롭다운 반영 완전 수정판")
 
 league_teams = {
     "EPL": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
@@ -34,8 +34,8 @@ if "matches" not in st.session_state:
 
 with st.form("match_form"):
     league = st.selectbox("리그 선택", list(league_teams.keys()), key="league_select")
-    home = st.selectbox("홈 팀", league_teams[league], key="home_select")
-    away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home], key="away_select")
+    home = st.selectbox("홈 팀", league_teams[league], key=f"home_{league}")
+    away = st.selectbox("원정 팀", [t for t in league_teams[league] if t != home], key=f"away_{league}")
     date_input = st.date_input("경기 날짜", value=datetime.date.today(), key="date_select")
     col1, col2 = st.columns(2)
     with col1:
@@ -46,7 +46,7 @@ with st.form("match_form"):
     if submit:
         st.session_state.matches.append({
             "Date": str(date_input),
-            "Time": f"{{hour:02}}:{{minute:02}}",
+            "Time": f"{hour:02}:{minute:02}",
             "League": league,
             "Home": home,
             "Away": away
@@ -74,13 +74,13 @@ if st.button("조합 추천"):
     filtered = [m for m in st.session_state.matches if m.get("Value", -1) >= 0]
     st.markdown("### ✅ 4폴 조합 (수익 전략)")
     for m in filtered[:4]:
-        st.write(f"{'{'}m['Home']{'}'} vs {'{'}m['Away']{'}'} → {'{'}m['Prediction']{'}'} (value: {'{'}m['Value']{'}'})")
+        st.write(f"{m['Home']} vs {m['Away']} → {m['Prediction']} (value: {m['Value']})")
     st.markdown("### 🎯 10폴 조합 (재미 전략)")
     for m in filtered[:10]:
-        st.write(f"{'{'}m['Home']{'}'} vs {'{'}m['Away']{'}'} → {'{'}m['Prediction']{'}'} (value: {'{'}m['Value']{'}'})")
+        st.write(f"{m['Home']} vs {m['Away']} → {m['Prediction']} (value: {m['Value']})")
     st.markdown("### ⚡ 고적중 전략")
     if filtered:
         top = max(filtered, key=lambda x: x["Value"])
-        st.write(f"{'{'}top['Home']{'}'} vs {'{'}top['Away']{'}'} → {'{'}top['Prediction']{'}'} (value: {'{'}top['Value']{'}'})")
+        st.write(f"{top['Home']} vs {top['Away']} → {top['Prediction']} (value: {top['Value']})")
     else:
         st.write("value ≥ 0인 예측이 없습니다.")
