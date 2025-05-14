@@ -13,10 +13,15 @@ if uploaded_file is not None:
         st.error("CSV 열 순서가 올바르지 않습니다. 정확한 순서: " + ", ".join(required_cols))
     else:
         st.success("CSV 파일 정상 인식됨.")
-        matches["Prediction"] = ["승", "무", "패", "승", "무", "승", "패", "무", "승", "패"]
-        matches["O/U"] = ["오버", "언더", "오버", "언더", "오버", "언더", "오버", "언더", "오버", "언더"]
-        matches["Odds"] = [1.85, 3.20, 4.10, 1.90, 3.00, 1.70, 4.00, 3.10, 2.10, 3.90]
-        matches["Value"] = [0.12, 0.03, -0.08, 0.10, 0.01, 0.22, -0.15, 0.00, 0.07, -0.03]
+
+        predictions = ["승", "무", "패"]
+        overs = ["오버", "언더"]
+
+        num_matches = len(matches)
+        matches["Prediction"] = [predictions[i % 3] for i in range(num_matches)]
+        matches["O/U"] = [overs[i % 2] for i in range(num_matches)]
+        matches["Odds"] = [round(1.8 + (i % 4) * 0.3, 2) for i in range(num_matches)]
+        matches["Value"] = [round(0.1 - (i % 3) * 0.05, 2) for i in range(num_matches)]
 
         results = []
         roi = []
@@ -37,7 +42,7 @@ if uploaded_file is not None:
                     status.append("입력 대기")
                 else:
                     roi.append(row['Odds'] - 1 if result == row['Prediction'] else -1)
-                    status.append("학습 완료" if result == row['Prediction'] else "학습 완료")
+                    status.append("학습 완료")
 
         matches["Result"] = results
         matches["ROI"] = roi
